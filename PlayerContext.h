@@ -75,7 +75,8 @@ public:
         TABLE_MODE_BID,
         TABLE_MODE_PLAY,
         TABLE_MODE_WAIT_TIMER_END_OF_TRICK,
-        TABLE_MODE_WAIT_CLICK_END_OF_TRICK
+        TABLE_MODE_WAIT_CLICK_END_OF_TRICK,
+        TABLE_MODE_SHOW_RESULTS,
     };
 
     PlayerContext();
@@ -91,6 +92,9 @@ public:
     bool IsMyBidTurn() const {
         return (mCurrentPlayer == mMyself.place) && !mMyBid.contract.IsValid();
     }
+
+    int AttackPoints();
+    int DefensePoints();
 
     void Update();
 

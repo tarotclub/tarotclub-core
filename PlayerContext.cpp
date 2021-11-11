@@ -158,6 +158,16 @@ Deck PlayerContext::AutoDiscard()
     return discard;
 }
 /*****************************************************************************/
+int PlayerContext::AttackPoints()
+{
+    return mPoints.GetPoints(Team(Team::ATTACK), mBid, mNbPlayers);
+}
+/*****************************************************************************/
+int PlayerContext::DefensePoints()
+{
+    return mPoints.GetPoints(Team(Team::DEFENSE), mBid, mNbPlayers);
+}
+/*****************************************************************************/
 void PlayerContext::Update()
 {
     mEndOfTrickTimer.Update();
@@ -640,6 +650,7 @@ void PlayerContext::DecodeEndOfDeal(const JsonValue &json)
 void PlayerContext::DecodeEndOfGame(const JsonValue &json)
 {
     mCurrentPlayer = Place(json.FindValue("winner").GetString());
+    mMode = PlayerContext::TABLE_MODE_SHOW_RESULTS;
 }
 /*****************************************************************************/
 bool PlayerContext::Decode(const Request &req, JsonObject &json)

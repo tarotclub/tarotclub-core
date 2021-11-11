@@ -99,6 +99,13 @@ void Bot::HandleRequest(const Request &req)
         // Only reply a bid if it is our place to anwser
         if (mCtx.mCurrentPlayer == mCtx.mMyself.place)
         {
+            Contract highestBid = mCtx.mBid.contract;
+            mCtx.mMyBid.contract = mCtx.CalculateBid(); // propose our algorithm if the user's one failed
+            // only bid over previous one is allowed
+            if (mCtx.mMyBid.contract <= highestBid)
+            {
+                mCtx.mMyBid.contract = Contract::PASS;
+            }
             RequestBid(mNetReplies);
 //            std::this_thread::sleep_for(std::chrono::seconds(1)); // Simulate thinking
         }
