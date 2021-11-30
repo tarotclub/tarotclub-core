@@ -32,6 +32,7 @@
 #include "Observer.h"
 #include "JsonValue.h"
 #include "Score.h"
+#include "TarotContext.h"
 
 /*****************************************************************************/
 /**
@@ -77,7 +78,7 @@ public:
     void NewGame();
     Tarot::Distribution NewDeal(const Tarot::Distribution &shuffle);
     Place StartDeal();
-    void SetAfterBidSequence();
+    void ManageAfterBidSequence();
     void EndOfDeal(JsonObject &json);
     void BidSequence();
     void DiscardSequence();
@@ -114,10 +115,7 @@ public:
     void SetHandle(const Deck &handle, Team team);
     Place SetTrick(const Deck &trick, std::uint8_t trickCounter);
 
-    // Helpers
-    void NewDeal();
-    void AnalyzeGame(Points &points, std::uint8_t numberOfPlayers);
-    void GenerateEndDealLog(std::uint8_t numberOfPlayers, JsonObject &json);
+    void GenerateEndDealLog(JsonObject &json);
     bool LoadGameDealLog(const std::string &fileName);
     bool LoadGameDeal(const std::string &buffer);
     bool DecodeJsonDeal(const JsonValue &json);
@@ -139,9 +137,7 @@ private:
     Points  mCurrentPoints;
 
     // Game state variables
-    std::uint8_t    mNbPlayers;
     Sequence        mSequence;
-    Tarot::Bid      mBid;
     std::uint8_t    mPosition;          // Current position, [1..numberOfPlayers]
     Place           mDealer;            // who has dealt the cards
     std::uint8_t    mTrickCounter;       // number of tricks played [1..18] for 4 players
@@ -149,18 +145,7 @@ private:
     unsigned        mSeed;
     bool            mHandleAsked[5U];
 
-    // Gestion de la donne en cours
-    Deck mDiscard;
-    Deck mDog;
-    Deck mAttackHandle;
-    Deck mDefenseHandle;
-    Deck mTricks[24];    // 24 tricks max with 3 players
-    Place mWinner[24];
-    Place mPreviousWinner;
-    Place mFirstPlayer;
-    Card mKingCalled;
-    int mTricksWon;
-    Deck::Statistics statsAttack;
+    TarotContext mCtx;
 
     void CreateDeal(Tarot::Distribution &shuffle);
     bool IsEndOfTrick();

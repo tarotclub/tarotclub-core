@@ -540,6 +540,10 @@ void PlayerContext::DecodeReplyJoinTable(const JsonValue &json)
     mMyself.place = Place(json.FindValue("place").GetString());
     mMyself.tableId = static_cast<std::uint32_t>(json.FindValue("table_id").GetInteger());
     mNbPlayers = static_cast<std::uint32_t>(json.FindValue("size").GetInteger());
+
+    JsonObject gameContext = json.FindValue("context").GetObj();
+
+
 }
 /*****************************************************************************/
 void PlayerContext::DecodeNewGame(const JsonValue &json)

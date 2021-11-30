@@ -53,8 +53,13 @@ public:
     void SetupGame(const Tarot::Game &game);
     void SetAdminMode(bool enable); // Automatic or table managed by the admin
     Place AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers);
-    bool RemovePlayer(std::uint32_t kicked_player);
+    void RemovePlayer(std::uint32_t kicked_player);
     Score GetScore() { return mScore; }
+    JsonObject GetContext() {
+        JsonObject json;
+        mEngine.GenerateEndDealLog(json);
+        return json;
+    }
 
 private:
     struct Challenger

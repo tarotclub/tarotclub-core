@@ -224,12 +224,14 @@ bool Lobby::Deliver(const Request &req)
                 bool foundTable = false;
 
                 // Forward it to the table PlayingTable
+                JsonObject tableContext;
                 for (auto &t : mTables)
                 {
                     if (t->GetId() == tableId)
                     {
                         foundTable = true;
                         assignedPlace = t->AddPlayer(req.src_uuid, nbPlayers);
+                        tableContext = t->GetContext();
                         break;
                     }
                 }
@@ -248,6 +250,8 @@ bool Lobby::Deliver(const Request &req)
                     reply.AddValue("table_id", tableId);
                     reply.AddValue("place", assignedPlace.ToString());
                     reply.AddValue("size", nbPlayers);
+                    // On envoie toujours tout le contexte de la partie en cours de la table
+                    reply.AddValue("context", tableContext);
                     out.push_back(Reply(req.src_uuid, reply));
 
                     SendPlayerEvent(req.src_uuid, "JoinTable", out);
@@ -412,29 +416,20 @@ void Lobby::Error(std::uint32_t error, std::uint32_t dest_uuid, std::vector<Repl
 /*****************************************************************************/
 void Lobby::RemovePlayerFromTable(std::uint32_t uuid, std::uint32_t tableId, std::vector<Reply> &out)
 {
-    bool removeAllPlayers = false;
-
     // Forward it to the table PlayingTable
     for (auto &t : mTables)
     {
         if (t->GetId() == tableId)
         {
             // Remove the player from the table, if we are in game, then all are removed
-            removeAllPlayers = t->RemovePlayer(uuid);
+            t->RemovePlayer(uuid);
         }
     }
 
     // Warn one or more player that they are kicked from the table
     std::vector<std::uint32_t> peers;
-    if (removeAllPlayers)
-    {
-        peers = mUsers.GetTablePlayerIds(tableId);
-    }
-    else
-    {
-        // Remove only one player
-        peers.push_back(uuid);
-    }
+    // Remove only one player
+    peers.push_back(uuid);
 
     for (std::uint32_t i = 0U; i < peers.size(); i++)
     {

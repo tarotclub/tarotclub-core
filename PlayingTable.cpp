@@ -153,86 +153,69 @@ Place PlayingTable::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
     Place assigned;
     nbPlayers = mEngine.GetNbPlayers();
 
-    if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYERS)
+    // Check if player is not already connected
+    if (GetPlayerPlace(uuid) == Place(Place::NOWHERE))
     {
-        // Check if player is not already connected
-        if (GetPlayerPlace(uuid) == Place(Place::NOWHERE))
+        // Look for free Place and assign the uuid to this player
+        for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
         {
-            // Look for free Place and assign the uuid to this player
-            for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+            if (mPlayers[i].uuid == Protocol::INVALID_UID)
             {
-                if (mPlayers[i].uuid == Protocol::INVALID_UID)
-                {
-                    assigned = i;
-                    break;
-                }
+                assigned = i;
+                break;
             }
+        }
 
-            std::uint8_t place = assigned.Value();
-            if (place < Place::NOWHERE)
+        std::uint8_t place = assigned.Value();
+        if (place < Place::NOWHERE)
+        {
+            mPlayers[place].uuid = uuid;
+            // If it is the first player, then it is an admin
+            if (mAdmin == Protocol::INVALID_UID)
             {
-                mPlayers[place].uuid = uuid;
-                // If it is the first player, then it is an admin
-                if (mAdmin == Protocol::INVALID_UID)
-                {
-                    mAdmin = uuid;
-                }
+                mAdmin = uuid;
             }
-            else
-            {
-                TLogError("Internal memory problem");
-            }
+        }
+        else
+        {
+            TLogError("Internal memory problem");
         }
     }
     return assigned;
 }
 /*****************************************************************************/
-bool PlayingTable::RemovePlayer(std::uint32_t kicked_player)
+void PlayingTable::RemovePlayer(std::uint32_t kicked_player)
 {
-    bool removeAllPlayers = false;
-
     // Check if the uuid exists
     Place place = GetPlayerPlace(kicked_player);
     if (place != Place::NOWHERE)
     {
-        // If we are waiting for players, continue to wait
-        if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYERS)
+        // Update the admin
+        if (kicked_player == mAdmin)
         {
-            // Update the admin
-            if (kicked_player == mAdmin)
-            {
-                std::uint32_t newAdmin = Protocol::INVALID_UID;
-                for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
-                {
-                    // Choose another admin
-                    std::uint32_t uuid = GetPlayerUuid(Place(i));
-                    if (uuid != kicked_player)
-                    {
-                        newAdmin = uuid;
-                        break;
-                    }
-                }
-                mAdmin = newAdmin;
-            }
-
-            // Actually remove it
+            std::uint32_t newAdmin = Protocol::INVALID_UID;
             for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
             {
-                if (mPlayers[i].uuid == kicked_player)
+                // Choose another admin
+                std::uint32_t uuid = GetPlayerUuid(Place(i));
+                if (uuid != kicked_player)
                 {
-                    mPlayers[i].Clear();
+                    newAdmin = uuid;
+                    break;
                 }
             }
+            mAdmin = newAdmin;
         }
-        else
+
+        // Actually remove it
+        for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
         {
-            // If we are in a game, finish it and kick all players
-            removeAllPlayers = true;
-            mEngine.CreateTable(mEngine.GetNbPlayers()); // recreate the table (== reset it)
+            if (mPlayers[i].uuid == kicked_player)
+            {
+                mPlayers[i].Clear();
+            }
         }
     }
-
-    return removeAllPlayers;
 }
 /*****************************************************************************/
 /**
@@ -305,7 +288,7 @@ bool PlayingTable::ExecuteRequest(std::uint32_t src_uuid, std::uint32_t dest_uui
                     }
                     case Engine::WAIT_FOR_SHOW_KING_CALL:
                     {
-                        mEngine.SetAfterBidSequence();
+                        mEngine.ManageAfterBidSequence();
                         SendNextBidSequence(out);
                         break;
                     }
