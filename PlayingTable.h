@@ -57,9 +57,11 @@ public:
     Score GetScore() { return mScore; }
     JsonObject GetContext() {
         JsonObject json;
-        mEngine.GenerateEndDealLog(json);
+        mEngine.Ctx().SaveToJson(json);
         return json;
     }
+
+    Deck GetPlayerDeck(Place p);
 
 private:
     struct Challenger

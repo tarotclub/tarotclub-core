@@ -3,6 +3,7 @@
 static const std::string TAROT_CONTEXT_VERSION  = "3";
 
 TarotContext::TarotContext()
+    : mNbPlayers(4U)
 {
 
 }
@@ -22,7 +23,19 @@ void TarotContext::Initialize()
     mStatsAttack.Reset();
 }
 /*****************************************************************************/
-bool TarotContext::ShowDogAfterBid()
+void TarotContext::SetHandle(const Deck &handle, Place p)
+{
+    if ((p == mBid.taker) || (p == mBid.partner))
+    {
+        mAttackHandle = handle;
+    }
+    else
+    {
+        mDefenseHandle = handle;
+    }
+}
+/*****************************************************************************/
+bool TarotContext::ManageDogAfterBid()
 {
     bool showDog = true;
     if ((mBid.contract == Contract::GUARD_WITHOUT) || (mBid.contract == Contract::GUARD_AGAINST))
@@ -72,61 +85,45 @@ bool TarotContext::HasDecimal(float f)
  * @param turn
  * @return
  */
-Deck TarotContext::GetTrick(std::uint8_t turn, std::uint8_t numberOfPlayers)
+Deck TarotContext::GetTrick(std::uint8_t turn) const
 {
-    if (turn >= Tarot::NumberOfCardsInHand(numberOfPlayers))
+    if (turn >= Tarot::NumberOfCardsInHand(mNbPlayers))
     {
         turn = 0U;
     }
     return mTricks[turn];
 }
 /*****************************************************************************/
-Place TarotContext::GetWinner(std::uint8_t turn, std::uint8_t numberOfPlayers)
+Place TarotContext::GetWinner(std::uint8_t turn) const
 {
-    if (turn >= Tarot::NumberOfCardsInHand(numberOfPlayers))
+    if (turn >= Tarot::NumberOfCardsInHand(mNbPlayers))
     {
         turn = 0U;
     }
     return mWinner[turn];
 }
 /*****************************************************************************/
-void TarotContext::SetHandle(const Deck &handle, Team team)
+bool TarotContext::CheckKingCall(const Card &c, Deck::Statistics &stats) const
 {
-    if (team == Team::ATTACK)
-    {
-        mAttackHandle = handle;
-    }
-    else
-    {
-        mDefenseHandle = handle;
-    }
-}
-/*****************************************************************************/
-bool TarotContext::SetKingCall(const Card &c)
-{
-    bool success = false;
-
     // On l'appelle King mais en fait le preneur peut appeler une dame (ou cavalier, etc) s'il
     // possède 4 rois ou 4 dames. On va vérifier cela.
     // On analyse toujours le jeu de l'attaquant avant de continuer
-    mPlayers[mBid.taker.Value()].AnalyzeSuits(statsAttack);
-
     bool cardIsValid = true;
     if (c.GetValue() != Card::KING)
     {
-        if (statsAttack.kings == 4)
+        if (stats.kings == 4)
         {
             if (c.GetValue() != Card::QUEEN)
             {
-                if (statsAttack.queens == 4)
+                if (stats.queens == 4)
                 {
                     if (c.GetValue() != Card::KNIGHT)
                     {
-                        if (statsAttack.knights == 4)
+                        if (stats.knights == 4)
                         {
                             if (c.GetValue() != Card::JACK)
                             {
-                                if (statsAttack.jacks == 4)
+                                if (stats.jacks == 4)
                                 {
                                     cardIsValid = true;
                                 }
@@ -154,38 +151,10 @@ bool TarotContext::SetKingCall(const Card &c)
         }
     }
 
-
-    if (cardIsValid)
-    {
-        // Appel au roi dans le chien ou dans le deck du preneur ?
-        if (mDog.HasCard(c) || mPlayers[mBid.taker.Value()].HasCard(c))
-        {
-            // Il est tout seul car il a appelé une carte à lui ou au chien
-            mBid.partner = mBid.taker;
-            success = true;
-        }
-        else
-        {
-            // On recherche son partenaire
-            Place partner = mBid.taker.Next(5);
-            for (uint32_t i = 0; i < 4; i++)
-            {
-                if (mPlayers[partner.Value()].HasCard(c))
-                {
-                    mBid.partner = partner;
-                    success = true;
-                    break;
-                }
-                partner = partner.Next(5);
-            }
-        }
-
-        mKingCalled = c; // sauvegarde du roi appelé
-    }
-    return success;
+    return cardIsValid;
 }
 /*****************************************************************************/
-Place TarotContext::GetOwner(Place firstPlayer,const Card &card, int turn)
+Place TarotContext::GetOwner(Place firstPlayer,const Card &card, int turn) const
 {
     Place p = firstPlayer;
     std::uint8_t numberOfPlayers = mTricks[turn].Size();
@@ -204,7 +173,7 @@ Place TarotContext::GetOwner(Place firstPlayer,const Card &card, int turn)
 /**
  * @brief Generate a file with all played cards of the deal
  */
-void TarotContext::SaveToJson(JsonObject &json)
+void TarotContext::SaveToJson(JsonObject &json) const
 {
     json.AddValue("version", TAROT_CONTEXT_VERSION);
 
@@ -236,7 +205,7 @@ bool TarotContext::LoadFromJson(const JsonValue &json)
 {
     bool ret = true;
 
-    NewDeal();
+    Initialize();
 
     std::uint32_t numberOfPlayers;
     JsonValue players = json.FindValue("deal_info:number_of_players");
@@ -529,9 +498,9 @@ Place TarotContext::SetTrick(const Deck &trick, std::uint8_t trickCounter)
     return winner;
 }
 /*****************************************************************************/
-void TarotContext::AnalyzeGame(Points &points, std::uint8_t numberOfPlayers)
+void TarotContext::AnalyzeGame(Points &points)
 {
-    std::uint8_t numberOfTricks = Tarot::NumberOfCardsInHand(numberOfPlayers);
+    std::uint8_t numberOfTricks = Tarot::NumberOfCardsInHand(mNbPlayers);
     std::uint8_t lastTrick = numberOfTricks - 1U;
 
     // 1. Slam detection
@@ -596,7 +565,7 @@ void TarotContext::AnalyzeGame(Points &points, std::uint8_t numberOfPlayers)
 
     // 6. Handle bonus: Ces primes gardent la même valeur quel que soit le contrat.
     // La prime est acquise au camp vainqueur de la donne.
-    points.handlePoints += Tarot::GetHandlePoints(numberOfPlayers, Tarot::GetHandleType(mAttackHandle.Size()));
-    points.handlePoints += Tarot::GetHandlePoints(numberOfPlayers, Tarot::GetHandleType(mDefenseHandle.Size()));
+    points.handlePoints += Tarot::GetHandlePoints(mNbPlayers, Tarot::GetHandleType(mAttackHandle.Size()));
+    points.handlePoints += Tarot::GetHandlePoints(mNbPlayers, Tarot::GetHandleType(mDefenseHandle.Size()));
 }
 

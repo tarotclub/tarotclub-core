@@ -33,8 +33,7 @@
 
 /*****************************************************************************/
 PlayerContext::PlayerContext()
-    : mNbPlayers(4U)
-    , mTableToJoin(0U)
+    : mTableToJoin(0U)
 {
 
 }
@@ -49,7 +48,7 @@ void PlayerContext::Clear()
 /*****************************************************************************/
 bool PlayerContext::TestDiscard(const Deck &discard)
 {
-    return mDeck.TestDiscard(discard, mDog, mNbPlayers);
+    return mDeck.TestDiscard(discard, mDog, mGameState.mNbPlayers);
 }
 /*****************************************************************************/
 Contract PlayerContext::CalculateBid()
@@ -153,19 +152,19 @@ bool PlayerContext::IsValid(const Card &c)
 /*****************************************************************************/
 Deck PlayerContext::AutoDiscard()
 {
-    Deck discard = mDeck.AutoDiscard(mDog, mNbPlayers);
+    Deck discard = mDeck.AutoDiscard(mDog, mGameState.mNbPlayers);
     mDeck.RemoveDuplicates(discard);
     return discard;
 }
 /*****************************************************************************/
 int PlayerContext::AttackPoints()
 {
-    return mPoints.GetPoints(Team(Team::ATTACK), mBid, mNbPlayers);
+    return mPoints.GetPoints(Team(Team::ATTACK), mBid, mGameState.mNbPlayers);
 }
 /*****************************************************************************/
 int PlayerContext::DefensePoints()
 {
-    return mPoints.GetPoints(Team(Team::DEFENSE), mBid, mNbPlayers);
+    return mPoints.GetPoints(Team(Team::DEFENSE), mBid, mGameState.mNbPlayers);
 }
 /*****************************************************************************/
 void PlayerContext::Update()
@@ -539,11 +538,9 @@ void PlayerContext::DecodeReplyJoinTable(const JsonValue &json)
 {
     mMyself.place = Place(json.FindValue("place").GetString());
     mMyself.tableId = static_cast<std::uint32_t>(json.FindValue("table_id").GetInteger());
-    mNbPlayers = static_cast<std::uint32_t>(json.FindValue("size").GetInteger());
-
+    mDeck.SetCards(json.FindValue("deck").GetString());
     JsonObject gameContext = json.FindValue("context").GetObj();
-
-
+    mGameState.LoadFromJson(gameContext);
 }
 /*****************************************************************************/
 void PlayerContext::DecodeNewGame(const JsonValue &json)

@@ -135,7 +135,7 @@ public:
     Deck mDog;
     Deck mHandle;
     Deck mDeck;
-    std::uint8_t mNbPlayers;
+
     Users::Entry mMyself;
     std::uint32_t mTableToJoin;
     Sit mSits[5];
@@ -148,6 +148,9 @@ public:
     Deck mCurrentTrick;
     Place mCurrentPlayer;
     Place mFirstPlayer;
+
+    // FIXME: il y a sûrement des variables de ce contexte qui sont en doublon avec les membres de cette classe
+    TarotContext mGameState;
 
     TableMode mMode = TABLE_MODE_BLOCKED;
 
