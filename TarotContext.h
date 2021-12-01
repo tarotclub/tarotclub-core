@@ -26,17 +26,20 @@ public:
     Deck::Statistics mStatsAttack;
     Card mKingCalled;
 
+    // Modifiers
     Contract SetBid(Contract c, bool slam, Place p);
-    void SaveToJson(JsonObject &json);
     Place SetTrick(const Deck &trick, std::uint8_t trickCounter);
-    Place GetOwner(Place firstPlayer, const Card &card, int turn);
     bool LoadFromJson(const JsonValue &json);
-    bool ShowDogAfterBid();
-    void AnalyzeGame(Points &points, std::uint8_t numberOfPlayers);
-    Deck GetTrick(std::uint8_t turn, std::uint8_t numberOfPlayers);
-    Place GetWinner(std::uint8_t turn, std::uint8_t numberOfPlayers);
-    void SetHandle(const Deck &handle, Team team);
-    bool SetKingCall(const Card &c);
+    bool ManageDogAfterBid();
+    void AnalyzeGame(Points &points);
+    void SetHandle(const Deck &handle, Place p);
+
+    // Getters
+    void SaveToJson(JsonObject &json) const;
+    Place GetOwner(Place firstPlayer, const Card &card, int turn) const;
+    Deck GetTrick(std::uint8_t turn) const;
+    Place GetWinner(std::uint8_t turn) const;
+    bool CheckKingCall(const Card &c, Deck::Statistics &stats) const;
 private:
     bool HasDecimal(float f);
 };

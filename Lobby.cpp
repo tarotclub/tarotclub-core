@@ -225,6 +225,7 @@ bool Lobby::Deliver(const Request &req)
 
                 // Forward it to the table PlayingTable
                 JsonObject tableContext;
+                Deck playerDeck;
                 for (auto &t : mTables)
                 {
                     if (t->GetId() == tableId)
@@ -232,6 +233,7 @@ bool Lobby::Deliver(const Request &req)
                         foundTable = true;
                         assignedPlace = t->AddPlayer(req.src_uuid, nbPlayers);
                         tableContext = t->GetContext();
+                        playerDeck = t->GetPlayerDeck(assignedPlace);
                         break;
                     }
                 }
@@ -249,11 +251,10 @@ bool Lobby::Deliver(const Request &req)
                     reply.AddValue("cmd", "ReplyJoinTable");
                     reply.AddValue("table_id", tableId);
                     reply.AddValue("place", assignedPlace.ToString());
-                    reply.AddValue("size", nbPlayers);
-                    // On envoie toujours tout le contexte de la partie en cours de la table
-                    reply.AddValue("context", tableContext);
-                    out.push_back(Reply(req.src_uuid, reply));
+                    reply.AddValue("deck", playerDeck.ToString());
+                    reply.AddValue("context", tableContext); // On envoie toujours tout le contexte de la partie en cours de la table
 
+                    out.push_back(Reply(req.src_uuid, reply));
                     SendPlayerEvent(req.src_uuid, "JoinTable", out);
                 }
                 else

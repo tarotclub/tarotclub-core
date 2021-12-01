@@ -488,7 +488,7 @@ void Bot::BuildDiscard(std::vector<Reply> &out)
         if (ret.GetType() == Value::STRING)
         {
             std::uint8_t count = discard.SetCards(ret.GetString());
-            if (count == Tarot::NumberOfDogCards(mCtx.mNbPlayers))
+            if (count == Tarot::NumberOfDogCards(mCtx.mGameState.mNbPlayers))
             {
                 valid = mCtx.TestDiscard(discard);
             }

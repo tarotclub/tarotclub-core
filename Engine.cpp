@@ -38,15 +38,14 @@
 
 /*****************************************************************************/
 Engine::Engine()
-    : mCtx.mNbPlayers(4U)
-    , mSequence(STOPPED)
+    : mSequence(STOPPED)
     , mPosition(0U)
     , mTrickCounter(0U)
 {
     std::chrono::system_clock::rep seed = std::chrono::system_clock::now().time_since_epoch().count(); // rep is long long
     mSeed = static_cast<std::uint32_t>(seed);
 
-    NewDeal();
+    mCtx.Initialize();
 
     for (std::uint8_t i = 0U; i < 5U; i++)
     {
@@ -74,7 +73,7 @@ void Engine::CreateTable(std::uint8_t nbPlayers)
     mCtx.mNbPlayers = nbPlayers;
 
     // 1. Initialize internal states
-    mBid.Initialize();
+    mCtx.Initialize();
 
     // Choose the dealer
     mDealer = DealGenerator::RandomPlace(mCtx.mNbPlayers);
@@ -127,9 +126,9 @@ Place Engine::StartDeal()
 
     // In case of slam, the first player to play is the taker.
     // Otherwise, it is the player on the right of the dealer
-    if (mBid.slam == true)
+    if (mCtx.mBid.slam == true)
     {
-        mCurrentPlayer = mBid.taker;
+        mCurrentPlayer = mCtx.mBid.taker;
     }
     else
     {
@@ -137,31 +136,30 @@ Place Engine::StartDeal()
     }
 
     std::stringstream ss;
-    ss << "Taker: " << mBid.taker.ToString() << " / ";
-    ss << "Contract: " << mBid.contract.ToString();
+    ss << "Taker: " << mCtx.mBid.taker.ToString() << " / ";
+    ss << "Contract: " << mCtx.mBid.contract.ToString();
     TLogInfo(ss.str());
 
-    mFirstPlayer = mCurrentPlayer;
+    mCtx.mFirstPlayer = mCurrentPlayer;
     return mCurrentPlayer;
 }
 /*****************************************************************************/
 bool Engine::SetDiscard(const Deck &discard)
 {
-    bool valid = mPlayers[mBid.taker.Value()].TestDiscard(discard, mDog, mCtx.mNbPlayers);
+    bool valid = mPlayers[mCtx.mBid.taker.Value()].TestDiscard(discard, mCtx.mDog, mCtx.mNbPlayers);
 
     if (valid)
     {
         // Add the dog to the player's deck, and then filter the discard
-        mPlayers[mBid.taker.Value()] += mDog;
-        mPlayers[mBid.taker.Value()].RemoveDuplicates(discard);
+        mPlayers[mCtx.mBid.taker.Value()] += mCtx.mDog;
+        mPlayers[mCtx.mBid.taker.Value()].RemoveDuplicates(discard);
+        mCtx.mDiscard = discard;
+        mCtx.mDiscard.SetOwner(Team(Team::ATTACK));
 
         std::stringstream ss;
         ss << "Received discard: " << discard.ToString() << " / ";
-        ss << "Taker's deck after the discard: " << mPlayers[mBid.taker.Value()].ToString();
+        ss << "Taker's deck after the discard: " << mPlayers[mCtx.mBid.taker.Value()].ToString();
         TLogInfo(ss.str());
-
-        mDiscard = discard;
-        mDiscard.SetOwner(Team(Team::ATTACK));
         mSequence = WAIT_FOR_START_DEAL;
     }
     return valid;
@@ -179,19 +177,9 @@ bool Engine::SetHandle(const Deck &handle, Place p)
 
     if (valid)
     {
-        Team team;
-
-        if (p == mBid.taker)
-        {
-            team = Team::ATTACK;
-        }
-        else
-        {
-            team = Team::DEFENSE;
-        }
+        mCtx.SetHandle(handle, p);
 
         mSequence = WAIT_FOR_SHOW_HANDLE;
-        SetHandle(handle, team);
     }
     return valid;
 }
@@ -238,10 +226,38 @@ Contract Engine::SetBid(Contract c, bool slam, Place p)
 /*****************************************************************************/
 bool Engine::SetKingCalled(const Card &c)
 {
+    bool success = false;
+    Deck::Statistics stats;
+    mPlayers[mCtx.mBid.taker.Value()].AnalyzeSuits(stats);
 
-
-    if ()
+    if (mCtx.CheckKingCall(c, stats))
     {
+
+        // Appel au roi dans le chien ou dans le deck du preneur ?
+        if (mCtx.mDog.HasCard(c) || mPlayers[mCtx.mBid.taker.Value()].HasCard(c))
+        {
+            // Il est tout seul car il a appelé une carte à lui ou au chien
+            mCtx.mBid.partner = mCtx.mBid.taker;
+            success = true;
+        }
+        else
+        {
+            // On recherche son partenaire
+            Place partner = mCtx.mBid.taker.Next(5);
+            for (uint32_t i = 0; i < 4; i++)
+            {
+                if (mPlayers[partner.Value()].HasCard(c))
+                {
+                    mCtx.mBid.partner = partner;
+                    success = true;
+                    break;
+                }
+                partner = partner.Next(5);
+            }
+        }
+
+        mCtx.mKingCalled = c; // sauvegarde du roi appelé
+
         mSequence = Engine::WAIT_FOR_SHOW_KING_CALL;
     }
 
@@ -282,7 +298,7 @@ void Engine::GameSequence()
         TLogInfo("----------------------------------------------------\n");
 
         // The current trick winner will begin the next trick
-        mCurrentPlayer = SetTrick(currentTrick, mTrickCounter);
+        mCurrentPlayer = mCtx.SetTrick(currentTrick, mTrickCounter);
         currentTrick.Clear();
         mSequence = WAIT_FOR_END_OF_TRICK;
     }
@@ -307,15 +323,15 @@ void Engine::GameSequence()
 void Engine::EndOfDeal(JsonObject &json)
 {
     mCurrentPoints.Clear();
-    AnalyzeGame(mCurrentPoints, mCtx.mNbPlayers);
-    GenerateEndDealLog(json);
+    mCtx.AnalyzeGame(mCurrentPoints);
+    mCtx.SaveToJson(json);
 
     mSequence = WAIT_FOR_END_OF_DEAL;
 }
 /*****************************************************************************/
 void Engine::ManageAfterBidSequence()
 {
-    if (mCtx.ShowDogAfterBid())
+    if (mCtx.ManageDogAfterBid())
     {
         // Show the dog to all the players
         mSequence = WAIT_FOR_SHOW_DOG;
@@ -335,9 +351,9 @@ void Engine::ManageAfterBidSequence()
 void Engine::BidSequence()
 {
     // If a slam has been announced, we start immediately the deal
-    if (IsEndOfTrick() || mBid.slam)
+    if (IsEndOfTrick() || mCtx.mBid.slam)
     {
-        if (mBid.contract == Contract::PASS)
+        if (mCtx.mBid.contract == Contract::PASS)
         {
             // All the players have passed, deal again new cards
             mSequence = WAIT_FOR_ALL_PASSED;
@@ -346,7 +362,7 @@ void Engine::BidSequence()
         // dans le cas du jeu à 5 joueurs
         else if ((mCtx.mNbPlayers == 5) && (mSequence == WAIT_FOR_SHOW_BID))
         {
-            mBid.partner = mBid.taker; // par défaut, le partenaire est le preneur (cas à 5 joueurs que l'on tente
+            mCtx.mBid.partner = mCtx.mBid.taker; // par défaut, le partenaire est le preneur (cas à 5 joueurs que l'on tente
             // de généraliser pour tous les autres modes de jeu
             mSequence = WAIT_FOR_KING_CALL;
         }
@@ -459,19 +475,9 @@ void Engine::CreateDeal(Tarot::Distribution &shuffle)
     std::cout << "Player " + p.ToString() + " deck: " + mPlayers[i].ToString() << std::endl;
 #endif
     }
-    mDog = editor.GetDogDeck();
+    mCtx.mDog = editor.GetDogDeck();
 
     TLogInfo("Dog deck: " + editor.GetDogDeck().ToString());
-}
-/*****************************************************************************/
-Deck Engine::GetDog()
-{
-    return mDog;
-}
-/*****************************************************************************/
-Deck Engine::GetDiscard()
-{
-    return mDiscard;
 }
 /*****************************************************************************/
 bool Engine::LoadGameDealLog(const std::string &fileName)
@@ -484,7 +490,7 @@ bool Engine::LoadGameDealLog(const std::string &fileName)
 #endif
     if (JsonReader::ParseFile(json, fileName))
     {
-        ret = DecodeJsonDeal(json);
+        ret = mCtx.LoadFromJson(json);
     }
     else
     {
@@ -500,7 +506,7 @@ bool Engine::LoadGameDeal(const std::string &buffer)
 
     if (JsonReader::ParseString(json, buffer))
     {
-        ret = DecodeJsonDeal(json);
+        ret = mCtx.LoadFromJson(json);
     }
     else
     {

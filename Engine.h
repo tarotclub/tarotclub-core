@@ -96,14 +96,9 @@ public:
     }
     Points GetCurrentGamePoints();
 
-    std::uint8_t    GetNbPlayers()
-    {
-        return mNbPlayers;
-    }
-
     bool IsLastTrick()
     {
-        return Tarot::IsDealFinished(mTrickCounter, mNbPlayers);
+        return Tarot::IsDealFinished(mTrickCounter, mCtx.mNbPlayers);
     }
 
     // Setters
@@ -113,23 +108,12 @@ public:
     Contract SetBid(Contract c, bool slam, Place p);
     bool SetKingCalled(const Card &c);
     void SetHandle(const Deck &handle, Team team);
-    Place SetTrick(const Deck &trick, std::uint8_t trickCounter);
 
-    void GenerateEndDealLog(JsonObject &json);
     bool LoadGameDealLog(const std::string &fileName);
     bool LoadGameDeal(const std::string &buffer);
-    bool DecodeJsonDeal(const JsonValue &json);
 
     // Getters
-    Deck GetTrick(std::uint8_t turn, std::uint8_t numberOfPlayers);
-    Place GetWinner(std::uint8_t turn, std::uint8_t numberOfPlayers);
-    std::map<int, Place> GetPodium();
-    Deck GetDog();
-    Deck GetDiscard();
-    Tarot::Bid GetBid() { return mBid; }
-
-    static bool HasDecimal(float f);
-
+    const TarotContext &Ctx() { return mCtx; }
 
 private:
     Deck    mPlayers[5];     // [3..5] deck of players with their UUID, index = Place

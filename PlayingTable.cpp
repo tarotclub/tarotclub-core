@@ -47,7 +47,7 @@ bool PlayingTable::AckFromAllPlayers()
     bool ack = false;
     std::uint8_t counter = 0U;
 
-    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint8_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         if (mPlayers[i].ack)
         {
@@ -55,7 +55,7 @@ bool PlayingTable::AckFromAllPlayers()
         }
     }
 
-    if (counter == mEngine.GetNbPlayers())
+    if (counter == mEngine.Ctx().mNbPlayers)
     {
         ack = true;
         ResetAck();
@@ -66,7 +66,7 @@ bool PlayingTable::AckFromAllPlayers()
 /*****************************************************************************/
 void PlayingTable::ResetAck()
 {
-    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint8_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         mPlayers[i].ack = false;
     }
@@ -76,7 +76,7 @@ Place PlayingTable::GetPlayerPlace(std::uint32_t uuid)
 {
     Place p(Place::NOWHERE);
 
-    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint8_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         if (mPlayers[i].uuid == uuid)
         {
@@ -94,7 +94,7 @@ std::uint32_t PlayingTable::GetPlayerUuid(Place p)
 void PlayingTable::SendToAllPlayers(std::vector<Reply> &out, JsonObject &obj)
 {
     std::vector<std::uint32_t> list;
-    for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         if (!mPlayers[i].IsFree())
         {
@@ -106,7 +106,7 @@ void PlayingTable::SendToAllPlayers(std::vector<Reply> &out, JsonObject &obj)
 /*****************************************************************************/
 bool PlayingTable::Sync(Engine::Sequence sequence, std::uint32_t uuid)
 {
-    for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         if (mPlayers[i].uuid == uuid)
         {
@@ -151,13 +151,13 @@ void PlayingTable::CreateTable(std::uint8_t nbPlayers)
 Place PlayingTable::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
 {
     Place assigned;
-    nbPlayers = mEngine.GetNbPlayers();
+    nbPlayers = mEngine.Ctx().mNbPlayers;
 
     // Check if player is not already connected
     if (GetPlayerPlace(uuid) == Place(Place::NOWHERE))
     {
         // Look for free Place and assign the uuid to this player
-        for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+        for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
         {
             if (mPlayers[i].uuid == Protocol::INVALID_UID)
             {
@@ -194,7 +194,7 @@ void PlayingTable::RemovePlayer(std::uint32_t kicked_player)
         if (kicked_player == mAdmin)
         {
             std::uint32_t newAdmin = Protocol::INVALID_UID;
-            for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+            for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
             {
                 // Choose another admin
                 std::uint32_t uuid = GetPlayerUuid(Place(i));
@@ -208,7 +208,7 @@ void PlayingTable::RemovePlayer(std::uint32_t kicked_player)
         }
 
         // Actually remove it
-        for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+        for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
         {
             if (mPlayers[i].uuid == kicked_player)
             {
@@ -216,6 +216,11 @@ void PlayingTable::RemovePlayer(std::uint32_t kicked_player)
             }
         }
     }
+}
+/*****************************************************************************/
+Deck PlayingTable::GetPlayerDeck(Place p)
+{
+    return mEngine.GetDeck(p);
 }
 /*****************************************************************************/
 /**
@@ -299,7 +304,7 @@ bool PlayingTable::ExecuteRequest(std::uint32_t src_uuid, std::uint32_t dest_uui
                         JsonObject obj;
 
                         obj.AddValue("cmd", "BuildDiscard");
-                        out.push_back(Reply(GetPlayerUuid(mEngine.GetBid().taker), obj));
+                        out.push_back(Reply(GetPlayerUuid(mEngine.Ctx().mBid.taker), obj));
                         break;
                     }
                     case Engine::WAIT_FOR_START_DEAL:
@@ -360,7 +365,7 @@ bool PlayingTable::ExecuteRequest(std::uint32_t src_uuid, std::uint32_t dest_uui
                 {
                     Contract cont = mEngine.SetBid((Contract)c, slam, p);
 
-                    Tarot::Bid takerBid = mEngine.GetBid();
+                    Tarot::Bid takerBid = mEngine.Ctx().mBid;
 
 //                    TLogNetwork("Client bid received");
                     // Broadcast player's bid, and wait for all acknowlegements
@@ -402,7 +407,7 @@ bool PlayingTable::ExecuteRequest(std::uint32_t src_uuid, std::uint32_t dest_uui
         if (mEngine.GetSequence() == Engine::WAIT_FOR_DISCARD)
         {
             // Check if right player
-            if (mEngine.GetBid().taker == GetPlayerPlace(src_uuid))
+            if (mEngine.Ctx().mBid.taker == GetPlayerPlace(src_uuid))
             {
                 if (mEngine.SetDiscard(discard))
                 {
@@ -424,7 +429,7 @@ bool PlayingTable::ExecuteRequest(std::uint32_t src_uuid, std::uint32_t dest_uui
         if (mEngine.GetSequence() == Engine::WAIT_FOR_KING_CALL)
         {
             // Check if right player
-            if (mEngine.GetBid().taker == GetPlayerPlace(src_uuid))
+            if (mEngine.Ctx().mBid.taker == GetPlayerPlace(src_uuid))
             {
                 if (mEngine.SetKingCalled(c))
                 {
@@ -528,7 +533,7 @@ std::string PlayingTable::GetName()
 /*****************************************************************************/
 void PlayingTable::EndOfDeal(std::vector<Reply> &out)
 {
-    bool continueGame = mScore.AddPoints(mEngine.GetCurrentGamePoints(), mEngine.GetBid(), mEngine.GetNbPlayers());
+    bool continueGame = mScore.AddPoints(mEngine.GetCurrentGamePoints(), mEngine.Ctx().mBid, mEngine.Ctx().mNbPlayers);
 
     if (continueGame)
     {
@@ -582,7 +587,7 @@ void PlayingTable::NewDeal(std::vector<Reply> &out)
 
     mEngine.NewDeal(mGame.deals[mScore.GetCurrentCounter()]);
     // Send the cards to all the players
-    for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    for (std::uint32_t i = 0U; i < mEngine.Ctx().mNbPlayers; i++)
     {
         JsonObject obj;
         Place place(i);
@@ -598,7 +603,7 @@ void PlayingTable::NewDeal(std::vector<Reply> &out)
 void PlayingTable::StartDeal(std::vector<Reply> &out)
 {
     Place first = mEngine.StartDeal();
-    Tarot::Bid bid = mEngine.GetBid();
+    Tarot::Bid bid = mEngine.Ctx().mBid;
     JsonObject obj;
 
     obj.AddValue("cmd", "StartDeal");
@@ -623,7 +628,7 @@ void PlayingTable::SendNextBidSequence(std::vector<Reply> &out)
 
         obj.AddValue("cmd", "RequestBid");
         obj.AddValue("place", mEngine.GetCurrentPlayer().ToString());
-        obj.AddValue("contract", mEngine.GetBid().contract.ToString());
+        obj.AddValue("contract", mEngine.Ctx().mBid.contract.ToString());
         SendToAllPlayers(out, obj);
         break;
     }
@@ -656,7 +661,7 @@ void PlayingTable::SendNextBidSequence(std::vector<Reply> &out)
         JsonObject obj;
 
         obj.AddValue("cmd", "ShowDog");
-        obj.AddValue("dog", mEngine.GetDog().ToString());
+        obj.AddValue("dog", mEngine.Ctx().mDog.ToString());
         SendToAllPlayers(out, obj);
         break;
     }
