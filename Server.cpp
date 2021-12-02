@@ -27,13 +27,14 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <memory>
 #include "Util.h"
 #include "Server.h"
 #include "System.h"
 #include "Base64Util.h"
 
 
-PeerSession::PeerSession(asio::ip::tcp::socket socket, Lobby &lobby, asio::io_context& io_context)
+PeerSession::PeerSession(asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, asio::io_context& io_context)
     : socket_(std::move(socket))
     , mLobby(lobby)
     , read(io_context)
@@ -43,7 +44,7 @@ PeerSession::PeerSession(asio::ip::tcp::socket socket, Lobby &lobby, asio::io_co
 void PeerSession::Start()
 {
     TLogInfo("[SERVER] New peer");
-    uuid = mLobby.AddUser(shared_from_this());
+    uuid = mLobby->AddUser(shared_from_this());
     ReadHeader();
 }
 
@@ -68,7 +69,7 @@ void PeerSession::ReadHeader()
                   TLogError("[SERVER] Close error");
               }
               TLogNetwork("[SERVER] Peer disconnected");
-              mLobby.RemoveUser(uuid);
+              mLobby->RemoveUser(uuid);
           }
           else if (mProto.ParseHeader(h))
           {
@@ -102,7 +103,7 @@ void PeerSession::HandleBody()
         // 2. set player security key
         // prefix contains webId
         // à l'aide de cette information, on va récupérer la clé associée à ce joueur
-        if (mLobby.GetSecurity(h.prefix, sec))
+        if (mLobby->GetSecurity(h.prefix, sec))
         {
             mProto.SetSecurity(sec.gek);
         }
@@ -135,20 +136,20 @@ void PeerSession::HandleBody()
             else
             {
                 TLogNetwork("[SERVER] Bad pass phrase, expected: " + sec.passPhrase + " decoded: " + req.arg);
-                mLobby.RemoveUser(uuid);
+                mLobby->RemoveUser(uuid);
             }
         }
         else
         {
             req.src_uuid = h.src_uid;
             req.dest_uuid = h.dst_uid;
-            mLobby.Deliver(req);
+            mLobby->Deliver(req);
         }
     }
     else
     {
         TLogNetwork("[SERVER] Decrypt problem");
-        mLobby.RemoveUser(uuid);
+        mLobby->RemoveUser(uuid);
     }
 }
 
@@ -164,18 +165,33 @@ void PeerSession::DoWrite(const std::string &d)
 }
 
 Server::Server(asio::io_context &io_context, ServerOptions &options)
-    : acceptor_(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), options.game_tcp_port))
+    : mOptions(options)
+    , mLobby(std::make_shared<Lobby>())
+    , acceptor_(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), options.game_tcp_port))
     , socket_(io_context)
     , context(io_context)
 {
-
-    mLobby.CreateTable("Local game");
+    mLobby->CreateTable("Local game");
     Accept();
+}
+
+Server::~Server()
+{
+    for (auto & s : mServices)
+    {
+        s->Stop();
+    }
 }
 
 void Server::AddClient(const std::string &webId, const std::string &gek, const std::string &passPhrase)
 {
-    mLobby.AddAllowedClient(webId, gek, passPhrase);
+    mLobby->AddAllowedClient(webId, gek, passPhrase);
+}
+
+void Server::AddService(std::shared_ptr<IService> svc)
+{
+    mServices.push_back(svc);
+    svc->Initialize(shared_from_this(), mLobby);
 }
 
 void Server::Accept()

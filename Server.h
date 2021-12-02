@@ -32,12 +32,13 @@
 #include <mutex>
 #include <memory>
 #include "asio.hpp"
-
+#include "IService.h"
+#include "IServer.h"
 
 class PeerSession : public Peer, public std::enable_shared_from_this<PeerSession>
 {
 public:
-    PeerSession(asio::ip::tcp::socket socket, Lobby &lobby, asio::io_context& io_context);
+    PeerSession(asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, asio::io_context& io_context);
 
     void Start();
     virtual void Deliver(const std::string &data) override;
@@ -47,7 +48,7 @@ private:
     Protocol mProto;
     bool mIsPending = true;
     asio::ip::tcp::socket socket_;
-    Lobby &mLobby;
+    std::shared_ptr<Lobby> mLobby;
 
     Lobby::Security sec;
     Protocol::Header h;
@@ -60,20 +61,29 @@ private:
 };
 
 
-class Server
+class Server : public std::enable_shared_from_this<IServer>, public IServer
 {
 public:
     Server(asio::io_context& io_context, ServerOptions &options);
+    ~Server();
+
+    // From IServer
     void AddClient(const std::string &webId, const std::string &gek, const std::string &passPhrase);
+    ServerOptions &GetOptions() { return mOptions; }
+
+    void AddService(std::shared_ptr<IService> svc);
 
 private:
-    void Accept();
+    ServerOptions &mOptions;
+    std::shared_ptr<Lobby> mLobby;
+    std::vector<std::shared_ptr<IService>> mServices;
 
-    Lobby mLobby;
-
+    // Net stuff
     asio::ip::tcp::acceptor acceptor_;
     asio::ip::tcp::socket socket_;
     asio::io_context &context;
+
+    void Accept();
 };
 
 
