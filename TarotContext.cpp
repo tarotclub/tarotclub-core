@@ -294,15 +294,16 @@ bool TarotContext::LoadFromJson(const JsonValue &json)
                 {
                     Deck trick(iter->GetString());
 
-                    if (trick.Size() == numberOfPlayers)
+                    if (trick.Size() > 0)
                     {
+
                         Place winner = SetTrick(trick, trickCounter);
-#ifdef UNIT_TEST
+    #ifdef UNIT_TEST
                         (void) winner;
             //            std::cout << "Trick: " << (int)trickCounter << ", Cards: " << trick.ToString() << ", Winner: " << winner.ToString() << std::endl;
-#else
+    #else
                         (void) winner;
-#endif
+    #endif
                         // Remove played cards from this deck
                         if (mDiscard.RemoveDuplicates(trick) != numberOfPlayers)
                         {
@@ -313,13 +314,7 @@ bool TarotContext::LoadFromJson(const JsonValue &json)
                         }
                         trickCounter++;
                     }
-                    else
-                    {
-                        std::stringstream msg;
-                        msg << "Bad deal contents at trick: " << (int)trickCounter;
-                        TLogError(msg.str());
-                        ret = false;
-                    }
+
                 }
 
                 // Now that we have removed all the played cards from the mDiscard deck,
