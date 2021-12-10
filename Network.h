@@ -78,7 +78,7 @@ inline bool FromJson(Identity &ident, JsonObject &obj)
 {
     bool ret = true;
 
-    ident.nickname = obj.GetValue("nickname").GetString();
+    ident.username = obj.GetValue("nickname").GetString();
     ident.avatar = obj.GetValue("avatar").GetString();
     ident.GenderFromString(obj.GetValue("gender").GetString());
 
@@ -87,7 +87,7 @@ inline bool FromJson(Identity &ident, JsonObject &obj)
 
 inline void ToJson(Identity &ident, JsonObject &obj)
 {
-    obj.AddValue("nickname", ident.nickname);
+    obj.AddValue("nickname", ident.username);
     obj.AddValue("avatar", ident.avatar);
     obj.AddValue("gender", ident.GenderToString());
 }

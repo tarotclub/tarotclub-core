@@ -628,7 +628,7 @@ void Bot::SetTimeBeforeSend(std::uint16_t t)
 /*****************************************************************************/
 void Bot::ChangeNickname(const std::string &nickname, std::vector<Reply> &out)
 {
-    mCtx.mMyself.identity.nickname = nickname;
+    mCtx.mOptions.identity.username = nickname;
     mCtx.BuildChangeNickname(out);
 }
 /*****************************************************************************/
@@ -639,7 +639,7 @@ void Bot::SetAiScript(const std::string &path)
 /*****************************************************************************/
 void Bot::SetIdentity(const Identity &identity)
 {
-    mCtx.mMyself.identity = identity;
+    mCtx.mOptions.identity = identity;
 }
 /*****************************************************************************/
 bool Bot::InitializeScriptContext()

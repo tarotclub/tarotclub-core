@@ -177,7 +177,7 @@ void PlayerContext::BuildReplyLogin(std::vector<Reply> &out)
     JsonObject obj;
 
     obj.AddValue("cmd", "ReplyLogin");
-    ToJson(mMyself.identity, obj);
+    ToJson(mOptions.identity, obj);
 
     out.push_back(Reply(Protocol::LOBBY_UID, obj));
 }
@@ -255,7 +255,7 @@ void PlayerContext::BuildChangeNickname(std::vector<Reply> &out)
     JsonObject obj;
 
     obj.AddValue("cmd", "RequestChangeNickname");
-    obj.AddValue("nickname", mMyself.identity.nickname);
+    obj.AddValue("nickname", mOptions.identity.username);
 
     out.push_back(Reply(Protocol::LOBBY_UID, obj));
 }
@@ -304,9 +304,9 @@ void PlayerContext::UserFromJson(Users::Entry &member, JsonObject &player)
 {
     FromJson(member.identity, player);
 
-    member.uuid = static_cast<std::uint32_t>(player.GetValue("uuid").GetInteger());
-    member.tableId = static_cast<std::uint32_t>(player.GetValue("table").GetInteger());
-    member.place = Place(player.GetValue("place").GetString());
+    member.player.uuid = static_cast<std::uint32_t>(player.GetValue("uuid").GetInteger());
+    member.player.tableId = static_cast<std::uint32_t>(player.GetValue("table").GetInteger());
+    member.player.place = Place(player.GetValue("place").GetString());
 }
 /*****************************************************************************/
 /*
@@ -529,7 +529,7 @@ void PlayerContext::DecodeLobbyEvent(const JsonValue &json)
     if (type == "JoinTable")
     {
         // Player has join a table
-        mUsers.UpdateLocation(member.uuid, member.tableId, member.place);
+        mUsers.UpdateLocation(member.player.uuid, member.player.tableId, member.player.place);
     }
 
 }
@@ -677,11 +677,11 @@ void PlayerContext::UpdateMember(Users::Entry &member, const std::string &event)
 {
     if (event == "Quit")
     {
-        mUsers.Remove(member.uuid);
+        mUsers.Remove(member.player.uuid);
     }
     else
     {
-        if (!mUsers.IsHere(member.uuid))
+        if (!mUsers.IsHere(member.player.uuid))
         {
             if (event == "New")
             {
@@ -700,12 +700,12 @@ void PlayerContext::UpdateMember(Users::Entry &member, const std::string &event)
         {
             if (event == "Nick")
             {
-                mUsers.ChangeNickName(member.uuid, member.identity.nickname);
+                mUsers.ChangeNickName(member.player.uuid, member.identity.username);
             }
             else if ((event == "Join") ||
                      (event == "Leave"))
             {
-                mUsers.UpdateLocation(member.uuid, member.tableId, member.place);
+                mUsers.UpdateLocation(member.player.uuid, member.player.tableId, member.player.place);
             }
         }
     }

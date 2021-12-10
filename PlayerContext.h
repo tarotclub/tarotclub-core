@@ -136,7 +136,7 @@ public:
     Deck mHandle;
     Deck mDeck;
 
-    Users::Entry mMyself;
+    Users::Player mMyself;
     std::uint32_t mTableToJoin;
     Sit mSits[5];
     ClientOptions mOptions;

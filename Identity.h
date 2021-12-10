@@ -46,19 +46,20 @@ public:
     static const std::string cStrRobot;
     static const std::string cStrDummy;
 
-    std::string     nickname;
+    std::string     username;
     std::string     avatar;     ///< Path to the avatar image (local or network path)
     std::uint8_t    gender;
+    std::string     token;
 
     Identity()
-        : nickname("John Doe")
+        : username("John Doe")
         , gender(cGenderInvalid)
     {
 
     }
 
     Identity(const std::string &n, const std::string &a, std::uint8_t g)
-        : nickname(n)
+        : username(n)
         , avatar(a)
         , gender(g)
     {
@@ -70,8 +71,8 @@ public:
 
     Identity& operator=(Identity other)
     {
-        nickname = other.nickname;
-        avatar = other.nickname;
+        username = other.username;
+        avatar = other.username;
         gender = other.gender;
         return *this;
     }
