@@ -45,9 +45,9 @@ std::uint32_t Users::GetPlayerTable(std::uint32_t uuid)
 
    for (std::uint32_t i = 0; i < mUsers.size(); i++)
    {
-       if (mUsers[i].uuid == uuid)
+       if (mUsers[i].player.uuid == uuid)
        {
-            tableId = mUsers[i].tableId;
+            tableId = mUsers[i].player.tableId;
             break;
        }
    }
@@ -59,7 +59,7 @@ bool Users::GetEntry(std::uint32_t uuid, Entry &entry)
     bool ret = false;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid == uuid)
+        if (mUsers[i].player.uuid == uuid)
         {
              entry = mUsers[i];
              ret = true;
@@ -91,10 +91,10 @@ void Users::SetPlayingTable(std::uint32_t uuid, std::uint32_t tableId, Place pla
 {
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid == uuid)
+        if (mUsers[i].player.uuid == uuid)
         {
-             mUsers[i].tableId = tableId;
-             mUsers[i].place = place;
+             mUsers[i].player.tableId = tableId;
+             mUsers[i].player.place = place;
              break;
         }
     }
@@ -105,9 +105,9 @@ std::vector<std::uint32_t> Users::GetTablePlayerIds(std::uint32_t tableId)
     std::vector<std::uint32_t> theList;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (mUsers[i].tableId == tableId)
+        if (mUsers[i].player.tableId == tableId)
         {
-            theList.push_back(mUsers[i].uuid);
+            theList.push_back(mUsers[i].player.uuid);
         }
     }
     return theList;
@@ -118,7 +118,7 @@ std::vector<Users::Entry> Users::GetTableUsers(uint32_t tableId)
     std::vector<Users::Entry> theList;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (mUsers[i].tableId == tableId)
+        if (mUsers[i].player.tableId == tableId)
         {
             theList.push_back(mUsers[i]);
         }
@@ -131,7 +131,7 @@ std::vector<uint32_t> Users::GetAll()
     std::vector<std::uint32_t> theList;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        theList.push_back(mUsers[i].uuid);
+        theList.push_back(mUsers[i].player.uuid);
     }
     return theList;
 }
@@ -141,7 +141,7 @@ std::vector<Users::Entry> Users::Get(std::uint32_t filterId)
     std::vector<Entry> theList;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if ((mUsers[i].tableId == filterId) ||
+        if ((mUsers[i].player.tableId == filterId) ||
             (filterId == Protocol::LOBBY_UID))
         {
             theList.push_back(mUsers[i]);
@@ -160,7 +160,7 @@ bool Users::IsHere(std::uint32_t uuid)
     bool isHere = false;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid == uuid)
+        if (mUsers[i].player.uuid == uuid)
         {
              isHere = true;
              break;
@@ -175,9 +175,9 @@ bool Users::CheckNickName(std::uint32_t uuid, const std::string &nickname)
     bool already_used = false;
     for (std::uint32_t i = 0U; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid != uuid)
+        if (mUsers[i].player.uuid != uuid)
         {
-            if (mUsers[i].identity.nickname == nickname)
+            if (mUsers[i].identity.username == nickname)
             {
                 already_used = true;
                 break;
@@ -193,10 +193,10 @@ bool Users::UpdateLocation(std::uint32_t uuid, uint32_t tableId, Place p)
     bool ret = false;
     for (std::uint32_t i = 0U; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid == uuid)
+        if (mUsers[i].player.uuid == uuid)
         {
-             mUsers[i].tableId = tableId;
-             mUsers[i].place = p;
+             mUsers[i].player.tableId = tableId;
+             mUsers[i].player.place = p;
              ret = true;
              break;
         }
@@ -213,9 +213,9 @@ bool Users::ChangeNickName(uint32_t uuid, const std::string &nickname)
     {
         for (std::uint32_t i = 0U; i < mUsers.size(); i++)
         {
-            if (mUsers[i].uuid == uuid)
+            if (mUsers[i].player.uuid == uuid)
             {
-                 mUsers[i].identity.nickname = nickname;
+                 mUsers[i].identity.username = nickname;
                  ret = true;
                  break;
             }
@@ -235,9 +235,9 @@ bool Users::AddEntry(const Entry &entry)
 {
     bool valid = false;
 
-    if (!IsHere(entry.uuid))
+    if (!IsHere(entry.player.uuid))
     {
-        if (!CheckNickName(entry.uuid, entry.identity.nickname))
+        if (!CheckNickName(entry.player.uuid, entry.identity.username))
         {
             mUsers.push_back(entry);
             valid = true;
@@ -250,7 +250,7 @@ void Users::Remove(std::uint32_t uuid)
 {
     for (std::uint32_t i = 0U; i < mUsers.size(); i++)
     {
-        if (mUsers[i].uuid == uuid)
+        if (mUsers[i].player.uuid == uuid)
         {
             mUsers.erase(mUsers.begin() + i);
             break;

@@ -49,6 +49,8 @@ struct BotConf
 
 struct ClientOptions
 {
+    ClientOptions();
+
     bool            autoPlay;
     std::string     deckFilePath;
     bool            showAvatars;
@@ -59,6 +61,10 @@ struct ClientOptions
     bool            clickToClean;
     std::string     cardsOrder;
     std::uint16_t   timer;      // between players, in milliseconds
+
+    void SetDefault();
+
+    bool loaded = false;
 };
 
 
@@ -66,29 +72,10 @@ struct ClientOptions
 class ClientConfig
 {
 public:
-    // default values
-    static const std::uint16_t  DEFAULT_DELAY               = 500U;     // in ms
-    static const bool           AVATARS_DEF                 = true;
-    static const std::uint16_t  CLIENT_TIMER_DEF            = 1500U;
-    static const std::string    DEFAULT_CLIENT_CONFIG_FILE;
+    static bool Load(ClientOptions &options, const std::string &fileName);
+    static bool Save(ClientOptions &options, const std::string &fileName);
+    static std::string DefaultConfigFile();
 
-    ClientConfig();
-
-    bool     Load(const std::string &fileName);
-    bool     Save(const std::string &fileName);
-
-    // Getters
-    ClientOptions   GetOptions();
-    std::string     GetLocale();
-    static ClientOptions GetDefault();
-
-    // Setters
-    void SetOptions(const ClientOptions &newOptions);
-
-private:
-    ClientOptions mOptions;
-    bool mLoaded;
-    std::vector<std::string> mLang;
 };
 
 #endif // CLIENT_CONFIG_H

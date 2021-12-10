@@ -165,8 +165,8 @@ bool Lobby::Deliver(const Request &req)
             {
                 // Ok, move the user into the main list
                 // User belong to the lobby
-                entry.uuid = req.src_uuid;
-                entry.tableId = Protocol::LOBBY_UID;
+                entry.player.uuid = req.src_uuid;
+                entry.player.tableId = Protocol::LOBBY_UID;
                 if (mUsers.AddEntry(entry))
                 {
                     // Create a list of tables available on the server
@@ -190,7 +190,7 @@ bool Lobby::Deliver(const Request &req)
 
                     for (uint32_t i = 0U; i < users.size(); i++)
                     {
-                        array.AddValue(PlayerStatus(users[i].uuid));
+                        array.AddValue(PlayerStatus(users[i].player.uuid));
                     }
                     reply.AddValue("players", array);
 
@@ -461,8 +461,8 @@ JsonObject Lobby::PlayerStatus(std::uint32_t uuid)
     if (mUsers.GetEntry(uuid, entry))
     {
         obj.AddValue("uuid", uuid);
-        obj.AddValue("table", entry.tableId);
-        obj.AddValue("place", entry.place.ToString());
+        obj.AddValue("table", entry.player.tableId);
+        obj.AddValue("place", entry.player.place.ToString());
         ToJson(entry.identity, obj);
     }
 

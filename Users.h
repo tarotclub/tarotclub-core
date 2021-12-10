@@ -37,12 +37,12 @@
 class Users
 {
 public:
-    struct Entry
+
+    struct Player
     {
-        Entry()
-        {
-            Clear();
-        }
+        std::uint32_t uuid;
+        std::uint32_t tableId;  // INVALID_UID if not playing
+        Place place;            // place around the table (if joined a table)
 
         void Clear() {
             uuid = Protocol::INVALID_UID;
@@ -57,9 +57,18 @@ public:
             return (tableId != Protocol::INVALID_UID) && (place < Place(Place::NOWHERE));
         }
 
-        std::uint32_t uuid;
-        std::uint32_t tableId;  // INVALID_UID if not playing
-        Place place;            // place around the table (if joined a table)
+    };
+
+
+
+    struct Entry
+    {
+        Entry()
+        {
+            player.Clear();
+        }
+
+        Player player;
         Identity identity;
     };
 
