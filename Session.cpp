@@ -2,6 +2,8 @@
 #include "Log.h"
 #include "Protocol.h"
 
+using namespace boost;
+
 /*****************************************************************************/
 Session::Session(INetClientEvent &client)
     : mListener(client)
@@ -79,7 +81,7 @@ bool Session::IsConnected()
 /*****************************************************************************/
 void Session::Disconnect()
 {
-    asio::error_code ec;
+    boost::system::error_code ec;
     socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
     if (ec)
     {
@@ -98,7 +100,7 @@ void Session::ConnectToHost(const std::string &hostName, std::uint16_t port)
     // tcp::resolver::results_type& endpoints
     auto endpoints = resolver.resolve(hostName.c_str(), std::to_string(port));
     asio::async_connect(socket, endpoints,
-        [this](std::error_code error, asio::ip::tcp::endpoint)
+        [this](boost::system::error_code error, asio::ip::tcp::endpoint)
         {
             if ((asio::error::eof == error) || (asio::error::connection_reset == error))
             {

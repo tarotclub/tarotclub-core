@@ -33,8 +33,9 @@
 #include "System.h"
 #include "Base64Util.h"
 
+using namespace boost;
 
-PeerSession::PeerSession(asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, asio::io_context& io_context)
+PeerSession::PeerSession(asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, asio::io_context &io_context)
     : socket_(std::move(socket))
     , mLobby(lobby)
     , read(io_context)
@@ -58,11 +59,11 @@ void PeerSession::Deliver(const std::string &data)
 void PeerSession::ReadHeader()
 {
     socket_.async_receive(asio::buffer(mProto.Data(), PROTO_HEADER_SIZE),asio::bind_executor(read,
-          [&] (std::error_code error, std::size_t /*length*/)
+          [&] (boost::system::error_code error, std::size_t /*length*/)
      {
           if ((asio::error::eof == error) || (asio::error::connection_reset == error))
           {
-              asio::error_code ec;
+              boost::system::error_code ec;
               socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
               if (ec)
               {
