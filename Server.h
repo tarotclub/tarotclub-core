@@ -31,14 +31,16 @@
 #include "Protocol.h"
 #include <mutex>
 #include <memory>
-#include "asio.hpp"
+#include <boost/asio.hpp>
 #include "IService.h"
 #include "IServer.h"
+
+using namespace boost;
 
 class PeerSession : public Peer, public std::enable_shared_from_this<PeerSession>
 {
 public:
-    PeerSession(asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, asio::io_context& io_context);
+    PeerSession(boost::asio::ip::tcp::socket socket, std::shared_ptr<Lobby> lobby, boost::asio::io_context& io_context);
 
     void Start();
     virtual void Deliver(const std::string &data) override;
@@ -47,12 +49,12 @@ private:
     std::uint32_t uuid = 0;
     Protocol mProto;
     bool mIsPending = true;
-    asio::ip::tcp::socket socket_;
+    boost::asio::ip::tcp::socket socket_;
     std::shared_ptr<Lobby> mLobby;
 
     Lobby::Security sec;
     Protocol::Header h;
-    asio::io_context::strand read;
+    boost::asio::io_context::strand read;
 
     void ReadHeader();
     void DoWrite(const std::string &d);

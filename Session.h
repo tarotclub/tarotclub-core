@@ -4,7 +4,7 @@
 #include "Network.h"
 #include "ThreadQueue.h"
 #include "TcpClient.h"
-#include "asio.hpp"
+#include <boost/asio.hpp>
 #include "Protocol.h"
 
 class Session
@@ -36,9 +36,9 @@ private:
     Protocol mProto;
 
     Protocol::Header h;
-    asio::io_context io_context;
-    asio::ip::tcp::resolver resolver;
-    asio::ip::tcp::socket socket;
+    boost::asio::io_context io_context;
+    boost::asio::ip::tcp::resolver resolver;
+    boost::asio::ip::tcp::socket socket;
 
 
     std::string mWebId;
