@@ -92,6 +92,19 @@ inline void ToJson(Identity &ident, JsonObject &obj)
     obj.AddValue("gender", ident.GenderToString());
 }
 
+struct ServerState {
+    uint32_t nb_players;
+    uint32_t nb_tables;
+    std::string name;
+};
+
+inline void FromServersList(ServerState &state, const JsonObject &json)
+{
+    state.name = json.GetValue("name").GetString();
+    state.nb_tables = json.GetValue("nb_tables").GetInteger();
+    state.nb_players = json.GetValue("nb_players").GetInteger();
+}
+
 class INetClientEvent
 {
 public:
