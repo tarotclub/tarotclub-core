@@ -17,13 +17,14 @@ Session::Session(INetClientEvent &client)
 /*****************************************************************************/
 void Session::Initialize(const std::string &webId, const std::string &key, const std::string &passPhrase)
 {
+    mWebId = webId;
+    mPassPhrase = passPhrase;
+    mProto.SetSecurity(key);
+
     if (!mInitialized)
-    {
-        mWebId = webId;
-        mPassPhrase = passPhrase;
-        mProto.SetSecurity(key);
-        mThread = std::thread(&Session::Run, this);
+    {    
         mInitialized = true;
+        mThread = std::thread(&Session::Run, this);
     }
 }
 /*****************************************************************************/

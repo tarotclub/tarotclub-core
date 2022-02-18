@@ -59,7 +59,12 @@ private:
         }
 
         virtual void Disconnect() override {
+            mSession.Disconnect();
+        }
 
+        virtual void Initialize(const std::string &webId, const std::string &key, const std::string &passPhrase)
+        {
+            mSession.Initialize(webId, key, passPhrase);
         }
 
     };

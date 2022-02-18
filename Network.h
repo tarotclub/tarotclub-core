@@ -96,13 +96,19 @@ struct ServerState {
     uint32_t nb_players;
     uint32_t nb_tables;
     std::string name;
+    std::string ip_address;
+    uint16_t tcp_port;
+    std::string id;
 };
 
 inline void FromServersList(ServerState &state, const JsonObject &json)
 {
     state.name = json.GetValue("name").GetString();
+    state.id = json.GetValue("id").GetString();
     state.nb_tables = json.GetValue("nb_tables").GetInteger();
     state.nb_players = json.GetValue("nb_players").GetInteger();
+    state.tcp_port = json.GetValue("tcp_port").GetInteger();
+    state.ip_address = json.GetValue("ip_address").GetInteger();
 }
 
 class INetClientEvent
@@ -122,6 +128,7 @@ public:
     virtual void Send(uint32_t my_uid, const std::vector<Reply> &replies) = 0;
     virtual void ConnectToHost(const std::string &host, uint16_t tcp_port) = 0;
     virtual void Disconnect() = 0;
+    virtual void Initialize(const std::string &webId, const std::string &key, const std::string &passPhrase) = 0;
 };
 
 class INetServerEvent

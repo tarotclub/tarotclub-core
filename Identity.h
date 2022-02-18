@@ -74,6 +74,7 @@ public:
         username = other.username;
         avatar = other.username;
         gender = other.gender;
+        token = other.token;
         return *this;
     }
 
