@@ -85,6 +85,15 @@ void Protocol::Encrypt(const std::string &aad, const std::string &payload, const
     mbedtls_gcm_context ctx;
     mbedtls_gcm_init (&ctx);
     mbedtls_gcm_setkey (&ctx, MBEDTLS_CIPHER_ID_AES, reinterpret_cast<const unsigned char *>(mKey.data()), 128);
+
+    mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, payload.size(),
+                            reinterpret_cast<const unsigned char *>(iv.data()), 12,
+                            reinterpret_cast<const unsigned char *>(aad.data()), aad.size(),
+                              reinterpret_cast<const unsigned char *>(payload.data()),
+                            scratch, cTagSize,tag
+                            );
+    /*
+
     mbedtls_gcm_starts (&ctx, MBEDTLS_GCM_ENCRYPT,
                         reinterpret_cast<const unsigned char *>(iv.data()), 12,
                         reinterpret_cast<const unsigned char *>(aad.data()), aad.size());
@@ -103,6 +112,7 @@ void Protocol::Encrypt(const std::string &aad, const std::string &payload, const
 
     // After the loop
     mbedtls_gcm_finish (&ctx, tag, cTagSize);
+*/
     mbedtls_gcm_free (&ctx);
 
     output.append(iv);
@@ -128,6 +138,16 @@ bool Protocol::Decrypt(const std::string_view &aad, uint8_t *ciphered, uint32_t 
     mbedtls_gcm_context ctx;
     mbedtls_gcm_init (&ctx);
     mbedtls_gcm_setkey (&ctx, MBEDTLS_CIPHER_ID_AES, reinterpret_cast<const unsigned char *>(mKey.data()), 128);
+
+    mbedtls_gcm_auth_decrypt(&ctx, plainTextSize,
+                              reinterpret_cast<const unsigned char *>(iv), 12,
+                              reinterpret_cast<const unsigned char *>(aad.data()), aad.size(),
+                             reinterpret_cast<const unsigned char *>(tag), cTagSize,
+                              reinterpret_cast<const unsigned char *>(payload),
+                             reinterpret_cast<unsigned char *>(plainText)
+                              );
+
+    /*
     mbedtls_gcm_starts (&ctx, MBEDTLS_GCM_DECRYPT,
                         iv, cIVSize,
                         reinterpret_cast<const unsigned char *>(aad.data()), aad.size());
@@ -146,6 +166,8 @@ bool Protocol::Decrypt(const std::string_view &aad, uint8_t *ciphered, uint32_t 
 
     // After the loop
     mbedtls_gcm_finish (&ctx, tag_computed, cTagSize);
+*/
+
     mbedtls_gcm_free (&ctx);
     output.append(reinterpret_cast<char *>(plainText), sizeof(plainText));
     return std::memcmp(&tag_computed[0], tag, cTagSize) == 0;

@@ -86,8 +86,13 @@ void Session::Disconnect()
     socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
     if (ec)
     {
-        TLogError("[SESSION] Close error");
+        if (m_isConnected)
+        {
+            TLogError("[SESSION] Close error");
+        }
     }
+    m_isConnected = false;
+
     // Not necessary to close the socket
     // With asio, it may throw an exception
 }
@@ -109,6 +114,7 @@ void Session::ConnectToHost(const std::string &hostName, std::uint16_t port)
             }
             else if (!error)
             {
+                m_isConnected = true;
                 TLogInfo("Client " + mWebId + " connected");
                 SendToHost(BuildConnectionPacket());
                 ReadHeader();

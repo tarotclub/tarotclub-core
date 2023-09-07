@@ -3,7 +3,6 @@
 
 #include "Network.h"
 #include "ThreadQueue.h"
-#include "TcpClient.h"
 #include <boost/asio.hpp>
 #include "Protocol.h"
 
@@ -34,6 +33,7 @@ private:
     std::string mHostName;
     std::uint16_t mTcpPort;
     Protocol mProto;
+    bool m_isConnected{false};
 
     Protocol::Header h;
     boost::asio::io_context io_context;

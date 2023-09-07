@@ -31,7 +31,7 @@
 #include "System.h"
 #include "Util.h"
 #include "Log.h"
-#include "TcpSocket.h"
+
 
 /*****************************************************************************/
 std::string System::mHomePath;
@@ -109,11 +109,6 @@ void System::Initialize(const std::string &homePath)
     if (!Util::FolderExists(AvatarPath()))
     {
         Util::Mkdir(AvatarPath());
-    }
-
-    if (!tcp::TcpSocket::Initialize())
-    {
-        TLogError("Cannot initialize TCP context");
     }
 }
 /*****************************************************************************/
